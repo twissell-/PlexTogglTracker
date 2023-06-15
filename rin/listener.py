@@ -33,7 +33,7 @@ def plex_webhook():
                 break
 
         if not project:
-            metadata = data["Metadata"]
+            return Response(status=200)
 
         if data["event"] in ["media.play", "media.resume"]:
             if metadata["type"] == "episode":
