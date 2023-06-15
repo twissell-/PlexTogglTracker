@@ -1,0 +1,11 @@
+{
+  "endpoint": "",
+  "toggl_api_token": "",
+  "plex_username": "",
+  "mapping": [
+    {
+      "libraries": ["TV Shows", "Movies"],
+      "project": "Watching TV"
+    }
+  ]
+}
