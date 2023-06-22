@@ -15,36 +15,35 @@ _plex_username = config.get("plex_username")
 
 @plex_listener.route(_endpoint, methods=["POST"])
 def plex_webhook():
-    if request.method == "POST":
-        data = json.loads(request.form["payload"])
+    data = json.loads(request.form["payload"])
 
-        # event filter
-        if (
-            data["Account"]["title"] != _plex_username
-            or "media." not in data["event"]
-            or data["Metadata"]["type"] not in ["episode", "movie"]
-        ):
-            return Response(status=200)
-
-        metadata = data["Metadata"]
-
-        project = {}
-        for m in _mapping:
-            if metadata["librarySectionTitle"] in m["libraries"]:
-                project = _toggl.get_projects(name=m["project"])
-                break
-
-        if not project:
-            return Response(status=200)
-
-        if data["event"] in ["media.play", "media.resume"]:
-            if metadata["type"] == "episode":
-                title = metadata["grandparentTitle"]
-            else:
-                title = metadata["title"]
-
-            _toggl.start_timer(title, project["id"])
-        if data["event"] in ["media.pause", "media.stop"]:
-            _toggl.stop_timer()
-
+    # event filter
+    if (
+        data["Account"]["title"] != _plex_username
+        or "media." not in data["event"]
+        or data["Metadata"]["type"] not in ["episode", "movie"]
+    ):
         return Response(status=200)
+
+    metadata = data["Metadata"]
+
+    project = {}
+    for m in _mapping:
+        if metadata["librarySectionTitle"] in m["libraries"]:
+            project = _toggl.get_projects(name=m["project"])
+            break
+
+    if not project:
+        return Response(status=200)
+
+    if data["event"] in ["media.play", "media.resume"]:
+        if metadata["type"] == "episode":
+            title = metadata["grandparentTitle"]
+        else:
+            title = metadata["title"]
+
+        _toggl.start_timer(title, project["id"])
+    if data["event"] in ["media.pause", "media.stop"]:
+        _toggl.stop_timer()
+
+    return Response(status=200)
