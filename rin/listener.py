@@ -1,9 +1,11 @@
 import json
-from flask import Flask, request, Response
+
+from flask import Blueprint, Response, request
+
 from rin import config
 from rin.toggl import Toggl
 
-listener = Flask(__name__)
+plex_listener = Blueprint("plex_listener", __name__)
 
 _toggl = Toggl()
 _endpoint = "/" + config.get("endpoint")
@@ -11,7 +13,7 @@ _mapping = config.get("mapping")
 _plex_username = config.get("plex_username")
 
 
-@listener.route(_endpoint, methods=["POST"])
+@plex_listener.route(_endpoint, methods=["POST"])
 def plex_webhook():
     if request.method == "POST":
         data = json.loads(request.form["payload"])
