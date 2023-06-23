@@ -1,4 +1,5 @@
 import os
+from base64 import b64encode
 from datetime import datetime, timezone
 
 import requests
@@ -9,11 +10,11 @@ from rin import config
 class Toggl:
 
     BASE_URL = "https://api.track.toggl.com/api/v9"
-    HEADERS = {"content-type": "application/json"}
 
     def __init__(self, api_token="", app_name="rin"):
         self._app_name = app_name
         self._workspace = None
+        self._headers = {"content-type": "application/json", "Authorization": ""}
 
         if api_token:
             self._api_token = api_token
@@ -24,27 +25,36 @@ class Toggl:
         else:
             raise ValueError("Missing toggl api key")
 
-        self._auth = (api_token, "api_token")
+        self._headers["Authorization"] = (
+            "Basic "
+            + b64encode((self._api_token + ":api_token").encode())
+            .decode("ascii")
+            .rstrip()
+        )
 
     def _request(self, endpoint, params="", method="GET", body={}):
         url = Toggl.BASE_URL + endpoint
 
         if method == "POST":
-            return requests.post(
+            rtn = requests.post(
                 url,
-                headers=Toggl.HEADERS,
-                auth=self._auth,
+                headers=self._headers,
                 json=body,
                 params=params,
             )
         elif method == "GET":
-            return requests.get(
-                url, headers=Toggl.HEADERS, auth=self._auth, params=params
-            )
+            rtn = requests.get(url, headers=self._headers, params=params)
         elif method == "PATCH":
-            return requests.patch(
-                url, headers=Toggl.HEADERS, auth=self._auth, params=params
+            rtn = requests.patch(url, headers=self._headers, params=params)
+
+        if rtn.status_code != 200:
+            raise Exception(
+                "Toggl respose was: [{status}] {text}".format(
+                    status=rtn.status_code, text=rtn.text
+                )
             )
+
+        return rtn
 
     def get_workspace(self):
         if not self._workspace:
