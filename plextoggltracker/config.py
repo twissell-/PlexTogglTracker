@@ -22,7 +22,7 @@ class Config:
 def configure(
     toggl_api_token: str,
     plex_username: str,
-    mapping: "list[dict]",
+    mapping: "list[dict]" = None,
 ):
 
     Config.set("toggl_api_token", toggl_api_token)
