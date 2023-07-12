@@ -1,6 +1,6 @@
 import json
 
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response, current_app, request
 
 from plextoggltracker.config import Config
 from plextoggltracker.toggl import Toggl
@@ -14,7 +14,11 @@ def _webhook():
     plex_username = Config.get("plex_username")
     toggl = Toggl()
 
-    data = json.loads(request.form["payload"])
+    try:
+        data = json.loads(request.form["payload"])
+    except KeyError:
+        current_app.logger.debug("Request does not have a payload.")
+        return Response(status=200)
 
     # event filter
     if (
@@ -22,6 +26,7 @@ def _webhook():
         or "media." not in data["event"]
         or data["Metadata"]["type"] not in ["episode", "movie"]
     ):
+        current_app.logger.debug("Request ignored by filters.")
         return Response(status=200)
 
     metadata = data["Metadata"]
@@ -33,6 +38,11 @@ def _webhook():
             break
 
     if not project:
+        current_app.logger.debug(
+            "No mapping found for '{}' or project does not exists.".format(
+                metadata["librarySectionTitle"]
+            )
+        )
         return Response(status=200)
 
     if data["event"] in ["media.play", "media.resume"]:
@@ -42,7 +52,11 @@ def _webhook():
             title = metadata["title"]
 
         toggl.start_timer(title, project["id"])
+        current_app.logger.info(
+            "Started timer: {} ({}).".format(title, project["name"])
+        )
     if data["event"] in ["media.pause", "media.stop"]:
         toggl.stop_timer()
+        current_app.logger.info("Stoped timer.")
 
     return Response(status=200)
