@@ -1,6 +1,7 @@
 import json
 
 from flask import Blueprint, Response, current_app, request
+from werkzeug.exceptions import BadRequestKeyError
 
 from plextoggltracker.config import Config
 from plextoggltracker.toggl import Toggl
@@ -14,11 +15,12 @@ def _webhook():
     plex_username = Config.get("plex_username")
     toggl = Toggl()
 
-    try:
-        data = json.loads(request.form["payload"])
-    except KeyError:
+    data = request.form.get("payload")
+    if not data:
         current_app.logger.debug("Request does not have a payload.")
         return Response(status=200)
+
+    data = json.loads(data)
 
     # event filter
     if (
