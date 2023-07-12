@@ -1,13 +1,11 @@
 import json
-import logging
 
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response, current_app, request
 from werkzeug.exceptions import BadRequestKeyError
 
 from plextoggltracker.config import Config
 from plextoggltracker.toggl import Toggl
 
-logger = logging.getLogger("PlexTogglTracker")
 webhook = Blueprint("PlexTogglTracker", __name__)
 
 
@@ -19,7 +17,7 @@ def _webhook():
 
     data = request.form.get("payload")
     if not data:
-        logger.debug("Request does not have a payload.")
+        current_app.logger.debug("Request does not have a payload.")
         return Response(status=200)
 
     data = json.loads(data)
@@ -30,7 +28,7 @@ def _webhook():
         or "media." not in data["event"]
         or data["Metadata"]["type"] not in ["episode", "movie"]
     ):
-        logger.debug("Request ignored by filters.")
+        current_app.logger.debug("Request ignored by filters.")
         return Response(status=200)
 
     metadata = data["Metadata"]
@@ -42,7 +40,7 @@ def _webhook():
             break
 
     if not project:
-        logger.debug(
+        current_app.logger.debug(
             "No mapping found for '{}' or project does not exists.".format(
                 metadata["librarySectionTitle"]
             )
@@ -56,9 +54,11 @@ def _webhook():
             title = metadata["title"]
 
         toggl.start_timer(title, project["id"])
-        logger.info("Started timer: {} ({}).".format(title, project["name"]))
+        current_app.logger.info(
+            "Started timer: {} ({}).".format(title, project["name"])
+        )
     if data["event"] in ["media.pause", "media.stop"]:
         toggl.stop_timer()
-        logger.info("Stoped timer.")
+        current_app.logger.info("Stoped timer.")
 
     return Response(status=200)
