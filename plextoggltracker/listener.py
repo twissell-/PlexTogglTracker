@@ -5,7 +5,7 @@ from flask import Blueprint, Response, request
 from plextoggltracker.config import Config
 from plextoggltracker.toggl import Toggl
 
-webhook = Blueprint("PlexTogglTracker_webhook", __name__)
+webhook = Blueprint("PlexTogglTracker", __name__)
 
 
 @webhook.route("/webhook", methods=["POST"])
