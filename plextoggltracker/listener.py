@@ -2,24 +2,23 @@ import json
 
 from flask import Blueprint, Response, request
 
-from rin import config
-from rin.toggl import Toggl
+from plextoggltracker.config import Config
+from plextoggltracker.toggl import Toggl
 
-plex_listener = Blueprint("plex_listener", __name__)
-
-_toggl = Toggl()
-_endpoint = "/" + config.get("endpoint")
-_mapping = config.get("mapping")
-_plex_username = config.get("plex_username")
+webhook = Blueprint("PlexTogglTracker_webhook", __name__)
 
 
-@plex_listener.route(_endpoint, methods=["POST"])
-def plex_webhook():
+@webhook.route("/webhook", methods=["POST"])
+def _webhook():
+    mapping = Config.get("mapping")
+    plex_username = Config.get("plex_username")
+    toggl = Toggl()
+
     data = json.loads(request.form["payload"])
 
     # event filter
     if (
-        data["Account"]["title"] != _plex_username
+        data["Account"]["title"] != plex_username
         or "media." not in data["event"]
         or data["Metadata"]["type"] not in ["episode", "movie"]
     ):
@@ -28,9 +27,9 @@ def plex_webhook():
     metadata = data["Metadata"]
 
     project = {}
-    for m in _mapping:
+    for m in mapping:
         if metadata["librarySectionTitle"] in m["libraries"]:
-            project = _toggl.get_projects(name=m["project"])
+            project = toggl.get_projects(name=m["project"])
             break
 
     if not project:
@@ -42,8 +41,8 @@ def plex_webhook():
         else:
             title = metadata["title"]
 
-        _toggl.start_timer(title, project["id"])
+        toggl.start_timer(title, project["id"])
     if data["event"] in ["media.pause", "media.stop"]:
-        _toggl.stop_timer()
+        toggl.stop_timer()
 
     return Response(status=200)

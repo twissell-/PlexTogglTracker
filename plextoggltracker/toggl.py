@@ -4,26 +4,22 @@ from datetime import datetime, timezone
 
 import requests
 
-from rin import config
+from plextoggltracker.config import Config
 
 
 class Toggl:
 
     BASE_URL = "https://api.track.toggl.com/api/v9"
 
-    def __init__(self, api_token="", app_name="rin"):
-        self._app_name = app_name
+    def __init__(self):
+        self._app_name = "PlexTogglTracker_webhook"
         self._workspace = None
         self._headers = {"content-type": "application/json", "Authorization": ""}
 
-        if api_token:
-            self._api_token = api_token
-        elif os.environ.get("TOGGL_API_TOKEN"):
-            self._api_token = os.environ.get("TOGGL_API_TOKEN")
-        elif config.get("toggl_api_token"):
-            self._api_token = config.get("toggl_api_token")
-        else:
-            raise ValueError("Missing toggl api key")
+        if not Config.get("toggl_api_token"):
+            raise ValueError("toggl_api_token is not configured.")
+
+        self._api_token = Config.get("toggl_api_token")
 
         self._headers["Authorization"] = (
             "Basic "
